@@ -1,8 +1,91 @@
 export const tabs = [
+  { id: "templates", label: "简历模板" },
   { id: "generate", label: "简历生成" },
   { id: "skills", label: "经验管理" },
   { id: "ai", label: "AI配置" },
   { id: "photo", label: "基本信息" },
+];
+
+const defaultProjectLabels = {
+  background: "1.项目背景：",
+  challenge: "2.项目难点：",
+  actions: "3.行动：",
+  stack: "4.用到的技术栈：",
+};
+
+export const resumeTemplates = [
+  {
+    id: "classic-blue",
+    name: "经典蓝",
+    description: "顶部信息区 + 纵向内容流，适合技术岗和校招投递。",
+    tags: ["通用", "技术岗"],
+    layout: "classic",
+    theme: {
+      accentColor: "#1f4e79",
+      secondaryColor: "#eef3f7",
+      fontFamily: '"Microsoft YaHei", "PingFang SC", Arial, sans-serif',
+    },
+  },
+  {
+    id: "blue-hero",
+    name: "蓝色页眉",
+    description: "大面积蓝色页眉、圆角信息卡、胶囊标题标签。",
+    tags: ["页眉", "圆角信息卡"],
+    layout: "blueHero",
+    theme: {
+      accentColor: "#6797e6",
+      secondaryColor: "#edf4ff",
+      fontFamily: '"Microsoft YaHei", "PingFang SC", Arial, sans-serif',
+    },
+  },
+  {
+    id: "clean-black",
+    name: "黑青简洁",
+    description: "黑色顶栏、照片左置、右侧联系信息、短粗下划线标题。",
+    tags: ["简洁", "黑青"],
+    layout: "cleanBlack",
+    theme: {
+      accentColor: "#2a93aa",
+      secondaryColor: "#121f27",
+      fontFamily: '"Microsoft YaHei", "PingFang SC", Arial, sans-serif',
+    },
+  },
+  {
+    id: "deep-side",
+    name: "深蓝侧栏",
+    description: "左侧深蓝信息栏，右侧主体用圆形图标标题分组。",
+    tags: ["深色侧栏", "图标分组"],
+    layout: "deepSide",
+    theme: {
+      accentColor: "#284d6d",
+      secondaryColor: "#edf3f7",
+      fontFamily: '"Microsoft YaHei", "PingFang SC", Arial, sans-serif',
+    },
+  },
+  {
+    id: "green-line",
+    name: "绿色线条",
+    description: "绿色主标题、贯穿左侧竖线、斜角模块标题。",
+    tags: ["绿色", "线条"],
+    layout: "greenLine",
+    theme: {
+      accentColor: "#05b25c",
+      secondaryColor: "#e8f8ef",
+      fontFamily: '"Microsoft YaHei", "PingFang SC", Arial, sans-serif',
+    },
+  },
+  {
+    id: "hexagon-blue",
+    name: "六边形蓝灰",
+    description: "六边形照片、深蓝横条、斜角标题条。",
+    tags: ["六边形", "蓝灰"],
+    layout: "hexagonBlue",
+    theme: {
+      accentColor: "#40556f",
+      secondaryColor: "#edf1f5",
+      fontFamily: '"HarmonyOS Sans SC", "Microsoft YaHei", Arial, sans-serif',
+    },
+  },
 ];
 
 export const resume = {
@@ -23,12 +106,7 @@ export const resume = {
     title: "校园技术社团",
     body: "参与校园技术社团的项目实践与技术分享活动，协助完成活动页面制作、资料整理和团队协作。通过课程设计和社团项目积累了前端页面开发、需求沟通和问题排查经验。",
   },
-  projectLabels: {
-    background: "1.项目背景：",
-    challenge: "2.项目难点：",
-    actions: "3.行动：",
-    stack: "4.用到的技术栈：",
-  },
+  projectLabels: defaultProjectLabels,
   projects: [
     {
       name: "企业数据看板系统",

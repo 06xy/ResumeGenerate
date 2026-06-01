@@ -7,6 +7,7 @@ import BasicInfoPanel from "./components/BasicInfoPanel.vue";
 import ExperiencePanel from "./components/ExperiencePanel.vue";
 import GeneratePanel from "./components/GeneratePanel.vue";
 import ResumePreview from "./components/ResumePreview.vue";
+import TemplatePanel from "./components/TemplatePanel.vue";
 import ToastNotice from "./components/ToastNotice.vue";
 import { extractJobFromScreenshot, generateCampus, generateProjects, generateSkills, planResumeSections } from "./services/aiResume";
 import {
@@ -15,6 +16,7 @@ import {
   defaultExperienceMaterials,
   defaultGenerationDraft,
   resume as defaultResume,
+  resumeTemplates,
   tabs,
 } from "./data/resumeData";
 import {
@@ -38,6 +40,7 @@ const loadingSections = ref({
   projects: false,
 });
 
+const activeTemplateId = ref(resumeTemplates[0].id);
 const resume = ref(structuredClone(defaultResume));
 const experienceMaterials = ref([...defaultExperienceMaterials]);
 const generationDraft = ref({ ...defaultGenerationDraft });
@@ -64,6 +67,9 @@ const createResumeInfoLines = (basicInfo) => [
 const resumeInfoLines = ref(createResumeInfoLines(defaultBasicInfo));
 
 const activeTabLabel = computed(() => tabs.find((tab) => tab.id === activeTab.value)?.label ?? "");
+const activeTemplate = computed(
+  () => resumeTemplates.find((template) => template.id === activeTemplateId.value) ?? resumeTemplates[0],
+);
 
 const updatePreviewBasicInfo = (key, value) => {
   resumeBasicInfo.value = {
@@ -102,6 +108,14 @@ const updateResumeSectionTitle = (key, value) => {
 
 const updateResumeProjectLabel = (key, value) => {
   resume.value.projectLabels[key] = value;
+};
+
+const selectResumeTemplate = (templateId) => {
+  const template = resumeTemplates.find((item) => item.id === templateId);
+  if (!template) return;
+
+  activeTemplateId.value = template.id;
+  showToast(`已切换为${template.name}布局`);
 };
 
 const showToast = (message, type = "success") => {
@@ -578,6 +592,7 @@ onMounted(() => {
     <ResumePreview
       ref="resumePreviewRef"
       :resume="resume"
+      :layout-template="activeTemplate"
       :basic-info="resumeBasicInfo"
       :info-lines="resumeInfoLines"
       :loading-sections="loadingSections"
@@ -617,8 +632,15 @@ onMounted(() => {
       <div class="content-card">
         <transition name="fade" mode="out-in">
           <section :key="activeTab" class="content-view" :aria-label="activeTabLabel">
+            <TemplatePanel
+              v-if="activeTab === 'templates'"
+              :active-template-id="activeTemplateId"
+              :templates="resumeTemplates"
+              @select-template="selectResumeTemplate"
+            />
+
             <ExperiencePanel
-              v-if="activeTab === 'skills'"
+              v-else-if="activeTab === 'skills'"
               :materials="experienceMaterials"
               @add="addExperienceMaterial"
               @remove="removeExperienceMaterial"

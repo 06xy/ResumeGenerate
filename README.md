@@ -4,7 +4,7 @@ ResumeGenerate 是一个基于 Vue 3 的 AI 简历生成工作台，面向简历
 
 # 预览
 
-![](.\assets\1.png)
+![ResumeGenerate 预览](./assets/1.png)
 
 ## 功能特性
 

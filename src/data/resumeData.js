@@ -1,0 +1,88 @@
+export const tabs = [
+  { id: "generate", label: "简历生成" },
+  { id: "skills", label: "经验管理" },
+  { id: "ai", label: "AI配置" },
+  { id: "photo", label: "基本信息" },
+];
+
+export const resume = {
+  sectionTitles: {
+    intentPrefix: "求职意向：",
+    skills: "专业技能",
+    campus: "校园经历",
+    projects: "项目经历",
+  },
+  skills: [
+    "熟悉 Vue 3、TypeScript、Vite 等前端技术栈，能够完成业务页面开发、组件封装与接口联调",
+    "熟悉 Element Plus、Pinia、Vue Router 等常用生态，具备中后台系统开发经验",
+    "了解 Node.js、Express、RESTful API 基础，可配合后端完成联调和问题定位",
+    "熟悉 ECharts 数据可视化开发，能够根据业务数据完成图表配置和交互展示",
+    "熟悉 Git、npm、前端工程化流程，具备良好的代码规范和协作意识",
+  ],
+  campus: {
+    title: "校园技术社团",
+    body: "参与校园技术社团的项目实践与技术分享活动，协助完成活动页面制作、资料整理和团队协作。通过课程设计和社团项目积累了前端页面开发、需求沟通和问题排查经验。",
+  },
+  projectLabels: {
+    background: "1.项目背景：",
+    challenge: "2.项目难点：",
+    actions: "3.行动：",
+    stack: "4.用到的技术栈：",
+  },
+  projects: [
+    {
+      name: "企业数据看板系统",
+      role: "前端开发",
+      time: "2025.03 - 2025.06",
+      background: "项目面向企业经营数据展示场景，需要建设集指标概览、趋势分析、明细查询于一体的数据看板。",
+      challenge: "页面信息密度高，图表联动多，接口字段调整频繁，需要保证展示效果和数据一致性。",
+      actions: [
+        "负责看板首页、指标卡片和趋势图表开发，封装通用图表组件。",
+        "配合后端完成数据接口联调，处理字段映射、空值兜底和加载状态。",
+        "根据产品反馈优化筛选交互和响应式布局，提升页面可读性。",
+      ],
+      stack: "Vue 3、TypeScript、ECharts、Element Plus、Pinia",
+    },
+    {
+      name: "在线任务管理平台",
+      role: "前端开发",
+      time: "2024.10 - 2025.01",
+      background: "项目用于团队任务分配、进度跟踪和成员协作，需要支持任务列表、详情编辑、状态流转等功能。",
+      challenge: "任务状态和筛选条件较多，列表操作频繁，需要保证交互流畅和数据更新及时。",
+      actions: [
+        "负责任务列表、任务详情弹窗和状态筛选模块开发。",
+        "封装表单校验和弹窗组件，减少重复代码并提升维护效率。",
+        "配合接口完成新增、编辑、删除和状态更新流程联调。",
+      ],
+      stack: "Vue 3、Vue Router、Element Plus、Axios、Git",
+    },
+  ],
+};
+
+export const defaultExperienceMaterials = [
+  "参与企业数据看板系统前端开发，负责指标卡片、趋势图表和筛选交互，并配合后端完成接口联调。",
+  "参与在线任务管理平台开发，负责任务列表、详情弹窗、表单校验和状态流转功能。",
+];
+
+export const defaultGenerationDraft = {
+  role: "Web 前端开发工程师",
+  description:
+    "岗位职责：负责 Web 前端页面开发、组件封装、接口联调和业务功能落地；参与产品需求评审，配合后端完成系统迭代。任职要求：熟悉 Vue 技术栈，具备良好的页面还原、工程化开发和问题排查能力，有可视化、管理系统或小程序开发经验优先。",
+};
+
+export const defaultAiSettings = {
+  endpoint: "https://api.openai.com/v1/chat/completions",
+  apiKey: "",
+  modelId: "gpt-4o-mini",
+  isReasoningModel: false,
+};
+
+export const defaultBasicInfo = {
+  name: "李明",
+  gender: "男",
+  phone: "13800000000",
+  email: "liming@example.com",
+  schoolInfo: "示例大学｜计算机学院",
+  majorInfo: "软件工程｜本科｜2022.09 - 2026.06",
+  intent: "Web 前端开发工程师",
+};

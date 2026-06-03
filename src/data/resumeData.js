@@ -1,9 +1,10 @@
 export const tabs = [
   { id: "templates", label: "简历模板" },
   { id: "generate", label: "简历生成" },
-  { id: "skills", label: "经验管理" },
+  { id: "skills", label: "经验资料" },
   { id: "ai", label: "AI配置" },
   { id: "photo", label: "基本信息" },
+  { id: "backup", label: "备份恢复" },
 ];
 
 const defaultProjectLabels = {

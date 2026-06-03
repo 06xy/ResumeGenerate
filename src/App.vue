@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, ref } from "vue";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 import AiConfigPanel from "./components/AiConfigPanel.vue";
+import BackupPanel from "./components/BackupPanel.vue";
 import BasicInfoPanel from "./components/BasicInfoPanel.vue";
 import ExperiencePanel from "./components/ExperiencePanel.vue";
 import GeneratePanel from "./components/GeneratePanel.vue";
@@ -39,6 +40,7 @@ const isExportingPdf = ref(false);
 const isTestingAi = ref(false);
 const isGeneratingResume = ref(false);
 const isExtractingJob = ref(false);
+const isImportingBackup = ref(false);
 const generationProgress = ref(0);
 const generationStepText = ref("");
 const loadingSections = ref({
@@ -176,7 +178,7 @@ const saveExperienceMaterials = () => {
   const normalized = experienceMaterials.value.map((item) => item.trim()).filter(Boolean);
   experienceMaterials.value = normalized.length ? normalized : [""];
   localStorage.setItem(EXPERIENCE_MATERIALS_KEY, JSON.stringify(experienceMaterials.value));
-  showToast("经验素材已保存");
+  showToast("经验资料已保存");
 };
 
 const updateGenerationDraft = (nextDraft) => {
@@ -224,6 +226,16 @@ const extractJobDraftFromScreenshot = async () => {
 };
 
 const normalizeMaterials = () => experienceMaterials.value.map((item) => item.trim()).filter(Boolean);
+
+const persistBasicInfoWithoutPhotoChange = () => {
+  localStorage.setItem(
+    BASIC_INFO_KEY,
+    JSON.stringify({
+      profile: resumeBasicInfo.value,
+      photoSrc: resumePhotoSrc.value,
+    }),
+  );
+};
 
 const resetLoadingSections = () => {
   loadingSections.value = {
@@ -318,7 +330,7 @@ const normalizeExperienceItems = (payload, sectionKey) => {
       stack: String(item?.stack || "").trim(),
     }))
     .filter((item) => item.name || item.background || item.actions.length)
-    .slice(0, 2);
+    .slice(0, 3);
 };
 
 const normalizeAwards = (payload) => {
@@ -490,7 +502,7 @@ const generateResume = async () => {
 
   const materials = normalizeMaterials();
   if (!materials.length) {
-    showToast("请先在经验管理中填写经历素材", "error");
+    showToast("请先在经验资料中填写经历素材", "error");
     return;
   }
 
@@ -736,14 +748,136 @@ const saveBasicInfo = () => {
   };
   resumeInfoLines.value = createResumeInfoLines(resumeBasicInfo.value);
   resumePhotoSrc.value = photoDraft.value;
-  localStorage.setItem(
-    BASIC_INFO_KEY,
-    JSON.stringify({
-      profile: resumeBasicInfo.value,
-      photoSrc: resumePhotoSrc.value,
-    }),
-  );
+  persistBasicInfoWithoutPhotoChange();
   showToast("基本信息已保存");
+};
+
+const downloadJsonFile = (payload, filename) => {
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+};
+
+const createBackupPayload = () => ({
+  app: "ResumeGenerate",
+  version: 1,
+  exportedAt: new Date().toISOString(),
+  data: {
+    activeTemplateId: activeTemplateId.value,
+    aiSettings: aiSettings.value,
+    basicInfo: resumeBasicInfo.value,
+    experienceMaterials: experienceMaterials.value,
+    generationDraft: generationDraft.value,
+    resume: resume.value,
+  },
+});
+
+const backupConfig = () => {
+  const dateText = new Date().toISOString().slice(0, 10);
+  downloadJsonFile(createBackupPayload(), `ResumeGenerate-backup-${dateText}.json`);
+  showToast("备份文件已开始下载");
+};
+
+const readJsonFile = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        resolve(JSON.parse(String(reader.result || "{}")));
+      } catch {
+        reject(new Error("备份文件不是有效 JSON"));
+      }
+    };
+    reader.onerror = () => reject(new Error("备份文件读取失败"));
+    reader.readAsText(file);
+  });
+
+const normalizeImportedResume = (nextResume) => {
+  const baseResume = structuredClone(defaultResume);
+  const imported = nextResume && typeof nextResume === "object" ? nextResume : {};
+
+  return {
+    ...baseResume,
+    ...imported,
+    sectionTitles: {
+      ...baseResume.sectionTitles,
+      ...(imported.sectionTitles || {}),
+    },
+    projectLabels: {
+      ...baseResume.projectLabels,
+      ...(imported.projectLabels || {}),
+    },
+    skills: Array.isArray(imported.skills) ? imported.skills : baseResume.skills,
+    work: Array.isArray(imported.work) ? imported.work : baseResume.work,
+    internships: Array.isArray(imported.internships) ? imported.internships : baseResume.internships,
+    projects: Array.isArray(imported.projects) ? imported.projects : baseResume.projects,
+    awards: Array.isArray(imported.awards) ? imported.awards.map((item) => String(item || "").trim()).filter(Boolean) : baseResume.awards,
+    campus: {
+      ...baseResume.campus,
+      ...(imported.campus || {}),
+    },
+  };
+};
+
+const restoreConfig = async (event) => {
+  const input = event.target;
+  const file = input.files?.[0];
+  if (!file || isImportingBackup.value) return;
+
+  isImportingBackup.value = true;
+  const currentPhotoSrc = resumePhotoSrc.value;
+  const currentPhotoDraft = photoDraft.value;
+
+  try {
+    const payload = await readJsonFile(file);
+    const data = payload?.data && typeof payload.data === "object" ? payload.data : payload;
+
+    aiSettings.value = {
+      ...defaultAiSettings,
+      ...(data.aiSettings || {}),
+    };
+
+    resumeBasicInfo.value = {
+      ...defaultBasicInfo,
+      ...(data.basicInfo || data.profile || {}),
+    };
+    basicInfoDraft.value = { ...resumeBasicInfo.value };
+    resumeInfoLines.value = createResumeInfoLines(resumeBasicInfo.value);
+
+    const importedMaterials = Array.isArray(data.experienceMaterials) ? data.experienceMaterials : [];
+    experienceMaterials.value = importedMaterials.length
+      ? importedMaterials.map((item) => String(item || "")).filter(Boolean)
+      : [""];
+
+    generationDraft.value = {
+      ...defaultGenerationDraft,
+      ...(data.generationDraft || {}),
+    };
+
+    if (resumeTemplates.some((template) => template.id === data.activeTemplateId)) {
+      activeTemplateId.value = data.activeTemplateId;
+    }
+
+    resume.value = normalizeImportedResume(data.resume);
+    resumePhotoSrc.value = currentPhotoSrc;
+    photoDraft.value = currentPhotoDraft;
+
+    localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify(aiSettings.value));
+    localStorage.setItem(EXPERIENCE_MATERIALS_KEY, JSON.stringify(experienceMaterials.value));
+    persistBasicInfoWithoutPhotoChange();
+    showToast("备份已恢复，照片未被覆盖");
+  } catch (error) {
+    showToast(error?.message || "备份恢复失败", "error");
+  } finally {
+    input.value = "";
+    isImportingBackup.value = false;
+  }
 };
 
 onMounted(() => {
@@ -891,6 +1025,13 @@ onMounted(() => {
               @update-setting="updateAiSetting"
               @test="testAiConnection"
               @save="saveAiSettings"
+            />
+
+            <BackupPanel
+              v-else-if="activeTab === 'backup'"
+              :is-importing="isImportingBackup"
+              @backup="backupConfig"
+              @restore="restoreConfig"
             />
 
             <BasicInfoPanel

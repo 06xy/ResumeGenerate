@@ -1079,9 +1079,7 @@ button {
 }
 
 .resume-page.layout-deepSide .paper-title::before {
-  width: 11mm;
-  height: 11mm;
-  border-radius: 50%;
+  display: none;
 }
 
 .resume-page.layout-greenLine {
@@ -1548,6 +1546,46 @@ button {
   justify-content: flex-start;
   gap: 12px;
   padding-top: 6px;
+}
+
+.backup-layout {
+  display: grid;
+  gap: 14px;
+  max-width: 760px;
+}
+
+.backup-block {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.backup-block strong {
+  display: block;
+  color: var(--text);
+  font-size: 16px;
+}
+
+.backup-block p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.backup-upload {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.backup-upload input {
+  display: none;
 }
 
 .test-progress {

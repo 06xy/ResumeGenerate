@@ -13,7 +13,7 @@ defineEmits(["add", "remove", "save", "update-material"]);
   <div class="experience-editor">
     <div class="inline-notice">
       <span class="inline-notice-icon">!</span>
-      <span>经历越详细越好，可以写校园经历</span>
+      <span>经验资料越详细越好，可以写任何证书经历、实习经历、工作经历、校园经历等信息</span>
     </div>
 
     <article v-for="(item, index) in materials" :key="index" class="experience-item">
@@ -21,7 +21,7 @@ defineEmits(["add", "remove", "save", "update-material"]);
       <textarea
         :value="item"
         rows="4"
-        placeholder="写一段你过往的项目、实习、校园、比赛或工作经历，越具体越利于后续 AI 生成简历。"
+        placeholder="写一段你过往的项目、实习、工作、校园、比赛、证书或其他经历，越具体越利于后续 AI 生成简历。"
         @input="$emit('update-material', index, $event.target.value)"
       ></textarea>
       <button class="icon-button" type="button" aria-label="删除经历" @click="$emit('remove', index)">×</button>

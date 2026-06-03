@@ -314,23 +314,62 @@ button {
   white-space: nowrap;
 }
 
-.project-block {
+.project-block,
+.project-summary,
+.project-actions,
+.project-stack {
   margin: 3px 0 0;
   color: #333;
   font-size: 12.35px;
 }
 
-.project-block strong {
-  color: #111;
+.project-label {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 6px;
+  color: var(--paper-blue);
+  font-size: 11.6px;
+  font-weight: 700;
 }
 
-.project-block ul {
+.project-label::after {
+  content: "";
+  width: 1px;
+  height: 10px;
+  margin-left: 6px;
+  background: #d5dce2;
+}
+
+.project-summary {
+  line-height: 1.62;
+}
+
+.project-actions {
+  display: grid;
+  gap: 3px;
+}
+
+.project-actions ul {
   margin: 3px 0 0;
   padding-left: 18px;
 }
 
-.project-block li {
+.project-actions li {
   margin-bottom: 2px;
+  line-height: 1.55;
+}
+
+.project-stack {
+  color: #555;
+}
+
+.project-stack .project-label {
+  color: #666;
+}
+
+.project-stack .keywords {
+  color: var(--paper-blue);
+  font-weight: 600;
 }
 
 .award-line {

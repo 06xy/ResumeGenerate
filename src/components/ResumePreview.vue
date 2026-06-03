@@ -254,9 +254,10 @@ defineExpose({
                   />
                 </div>
 
-                <p v-if="item.background" class="project-block">
+                <p v-if="item.background" class="project-summary">
                   <EditableText
-                    tag="strong"
+                    tag="span"
+                    class="project-label"
                     :model-value="resume.projectLabels.background"
                     @update:model-value="emit('update-project-label', 'background', $event)"
                   />
@@ -266,9 +267,10 @@ defineExpose({
                     @update:model-value="emit('update-experience', { sectionKey: section.key, index, key: 'background', value: $event })"
                   />
                 </p>
-                <p v-if="item.challenge" class="project-block">
+                <p v-if="item.challenge" class="project-summary">
                   <EditableText
-                    tag="strong"
+                    tag="span"
+                    class="project-label"
                     :model-value="resume.projectLabels.challenge"
                     @update:model-value="emit('update-project-label', 'challenge', $event)"
                   />
@@ -278,9 +280,10 @@ defineExpose({
                     @update:model-value="emit('update-experience', { sectionKey: section.key, index, key: 'challenge', value: $event })"
                   />
                 </p>
-                <div v-if="item.actions?.length" class="project-block">
+                <div v-if="item.actions?.length" class="project-actions">
                   <EditableText
-                    tag="strong"
+                    tag="span"
+                    class="project-label"
                     :model-value="resume.projectLabels.actions"
                     @update:model-value="emit('update-project-label', 'actions', $event)"
                   />
@@ -301,9 +304,10 @@ defineExpose({
                     </li>
                   </ul>
                 </div>
-                <p v-if="item.stack" class="project-block">
+                <p v-if="item.stack" class="project-stack">
                   <EditableText
-                    tag="strong"
+                    tag="span"
+                    class="project-label"
                     :model-value="resume.projectLabels.stack"
                     @update:model-value="emit('update-project-label', 'stack', $event)"
                   />

@@ -7,10 +7,10 @@ export const tabs = [
 ];
 
 const defaultProjectLabels = {
-  background: "1.背景：",
-  challenge: "2.重点：",
-  actions: "3.行动：",
-  stack: "4.相关技能：",
+  background: "概述",
+  challenge: "重点",
+  actions: "负责内容",
+  stack: "相关技术",
 };
 
 export const resumeTemplates = [

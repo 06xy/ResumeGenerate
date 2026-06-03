@@ -7,10 +7,10 @@ export const tabs = [
 ];
 
 const defaultProjectLabels = {
-  background: "1.项目背景：",
-  challenge: "2.项目难点：",
+  background: "1.背景：",
+  challenge: "2.重点：",
   actions: "3.行动：",
-  stack: "4.用到的技术栈：",
+  stack: "4.相关技能：",
 };
 
 export const resumeTemplates = [
@@ -94,6 +94,9 @@ export const resume = {
     skills: "专业技能",
     campus: "校园经历",
     projects: "项目经历",
+    work: "工作经历",
+    internships: "实习经历",
+    awards: "奖项证书",
   },
   skills: [
     "熟悉 Vue 3、TypeScript、Vite 等前端技术栈，能够完成业务页面开发、组件封装与接口联调",
@@ -107,6 +110,35 @@ export const resume = {
     body: "参与校园技术社团的项目实践与技术分享活动，协助完成活动页面制作、资料整理和团队协作。通过课程设计和社团项目积累了前端页面开发、需求沟通和问题排查经验。",
   },
   projectLabels: defaultProjectLabels,
+  work: [
+    {
+      name: "示例科技有限公司业务管理平台",
+      role: "前端开发",
+      time: "2025.07 - 2025.10",
+      background: "项目用于企业内部客户、订单和数据报表管理，需要支持多角色权限、列表检索和表单录入等常用业务流程。",
+      challenge: "业务字段较多，页面状态和接口联动复杂，需要保证表单校验、数据回显和权限展示的一致性。",
+      actions: [
+        "负责客户列表、订单详情和报表筛选模块开发，封装表格、筛选栏和弹窗表单组件。",
+        "配合后端完成权限接口、字典数据和 CRUD 流程联调，处理加载状态、错误提示和空数据展示。",
+      ],
+      stack: "Vue 3、TypeScript、Element Plus、Pinia、Axios",
+    },
+  ],
+  internships: [
+    {
+      name: "示例互联网公司运营工具",
+      role: "前端实习生",
+      time: "2025.03 - 2025.06",
+      background: "项目面向运营团队日常活动配置和数据查看场景，需要快速交付多个配置页和数据看板页面。",
+      challenge: "页面迭代频繁，配置项较多，需要在保证交互一致性的同时提升页面开发效率。",
+      actions: [
+        "参与活动配置页、素材管理页和数据概览页开发，完成基础组件复用和页面状态维护。",
+        "根据测试反馈修复表单校验、分页查询和接口异常场景问题，提升页面稳定性。",
+      ],
+      stack: "Vue 3、JavaScript、Element Plus、ECharts、Git",
+    },
+  ],
+  awards: ["校级优秀课程设计", "CET-4"],
   projects: [
     {
       name: "企业数据看板系统",

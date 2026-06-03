@@ -333,6 +333,14 @@ button {
   margin-bottom: 2px;
 }
 
+.award-line {
+  margin: 0;
+  color: #333;
+  font-size: 12.6px;
+  line-height: 1.7;
+  word-break: break-word;
+}
+
 .keywords {
   color: var(--paper-blue);
   font-weight: 600;

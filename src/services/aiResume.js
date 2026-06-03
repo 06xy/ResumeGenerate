@@ -239,7 +239,7 @@ export const extractJobFromScreenshot = ({ settings, imageDataUrl }) =>
 export const planResumeSections = ({ settings, draft, materials }) =>
   requestJsonCompletion({
     settings,
-    maxTokens: 1800,
+    maxTokens: 2400,
     responseFormat: {
       type: "json_schema",
       json_schema: {
@@ -248,11 +248,21 @@ export const planResumeSections = ({ settings, draft, materials }) =>
         schema: {
           type: "object",
           additionalProperties: false,
-          required: ["skills", "campus", "projects"],
+          required: ["skills", "work", "internships", "projects", "campus", "awards", "priority"],
           properties: {
             skills: { type: "boolean" },
+            work: { type: "boolean" },
+            internships: { type: "boolean" },
             campus: { type: "boolean" },
             projects: { type: "boolean" },
+            awards: { type: "boolean" },
+            priority: {
+              type: "array",
+              items: {
+                type: "string",
+                enum: ["skills", "work", "internships", "projects", "campus", "awards"],
+              },
+            },
           },
         },
       },
@@ -262,17 +272,21 @@ export const planResumeSections = ({ settings, draft, materials }) =>
       {
         role: "system",
         content:
-          "你是简历结构规划助手。只能根据用户提供的目标岗位、HR岗位描述和经历素材判断简历模板中应保留哪些板块。不要使用任何现有模板示例内容，不要编造经历。不要输出分析过程。返回 JSON 顶层必须且只能包含 skills、campus、projects 三个 boolean 字段，禁止包裹 sections 字段。",
+          "你是简历结构规划助手。只能根据用户提供的目标岗位、HR岗位描述和经历素材判断简历模板中应保留哪些板块。不要使用任何现有模板示例内容，不要编造经历，不要读取基本信息。不要输出分析过程。返回 JSON 顶层必须且只能包含 skills、work、internships、projects、campus、awards、priority 字段，禁止包裹 sections 字段。",
       },
       {
         role: "user",
         content: JSON.stringify({
           task:
-            "判断专业技能、校园经历、项目经历三个板块是否应该保留。专业技能用于总结能力；校园经历只在素材明确包含学校、社团、学生组织、竞赛、课程设计等经历时保留；项目经历只在素材包含项目、实习、工作、系统建设、产品开发等经历时保留。",
+            "判断专业技能、工作经历、实习经历、项目经历、校园经历、奖项证书六个板块是否应该保留，并给出从高到低的展示优先级。专业技能用于总结岗位相关能力，有明确技能或项目素材时通常保留；工作经历只在素材明确包含正式工作、全职、公司任职、在职交付等信息时保留；实习经历只在素材明确包含实习、实习生、实习岗位等信息时保留；项目经历用于承载项目、系统建设、产品开发、课程项目等不应归入正式工作或实习的经历；校园经历只在素材明确包含学校、社团、学生组织、竞赛、课程设计、校园活动等经历时保留；奖项证书只在素材明确包含奖项、证书、比赛获奖、资格认证、英语等级、计算机等级等信息时保留。目标是一页简历：素材少时可以保留更多相关板块；只有一页放不下时才压缩低优先级内容。",
           requiredOutput: {
             skills: "boolean",
+            work: "boolean",
+            internships: "boolean",
             campus: "boolean",
             projects: "boolean",
+            awards: "boolean",
+            priority: ["skills", "work", "internships", "projects", "campus", "awards"],
           },
           forbiddenOutput: {
             sections: "不要返回这个字段，也不要把结果包在 sections 里",
@@ -282,6 +296,27 @@ export const planResumeSections = ({ settings, draft, materials }) =>
       },
     ],
   });
+
+const experienceSectionConfig = {
+  work: {
+    label: "工作经历",
+    outputKey: "work",
+    instruction:
+      "生成 1 到 2 条工作经历。只使用素材中明确属于正式工作、全职、公司任职或在职交付的经历。字段需适配中文简历模板：名称、角色、时间、背景、重点、行动列表、相关技能。",
+  },
+  internships: {
+    label: "实习经历",
+    outputKey: "internships",
+    instruction:
+      "生成 1 到 2 条实习经历。只使用素材中明确属于实习或实习生岗位的经历。字段需适配中文简历模板：名称、角色、时间、背景、重点、行动列表、相关技能。",
+  },
+  projects: {
+    label: "项目经历",
+    outputKey: "projects",
+    instruction:
+      "生成 1 到 2 条项目经历。使用素材中的项目、系统建设、产品开发、课程项目等经历，不要把明确的正式工作或实习重复写入项目经历。字段需适配中文简历模板：项目名称、角色、时间、项目背景、项目重点、行动列表、相关技能。",
+  },
+};
 
 export const generateSkills = ({ settings, draft, materials }) =>
   requestJsonCompletion({
@@ -334,23 +369,24 @@ export const generateCampus = ({ settings, draft, materials }) =>
     ],
   });
 
-export const generateProjects = ({ settings, draft, materials }) =>
-  requestJsonCompletion({
+export const generateExperienceSection = ({ settings, draft, materials, sectionKey }) => {
+  const config = experienceSectionConfig[sectionKey] || experienceSectionConfig.projects;
+  return requestJsonCompletion({
     settings,
-    maxTokens: 4200,
+    maxTokens: 3600,
     messages: [
       {
         role: "system",
         content:
-          "你是中文项目简历写作助手。只能基于用户提供的目标岗位、HR岗位描述和经历素材生成项目经历。写作必须像真实项目复盘，不能像为了迎合 JD 而堆关键词。不要复刻 JD 的招聘话术或门槛表达，例如“至少会”“优先”“加分项”“任职要求”“岗位职责”“需要具备”“熟练掌握者优先”。技术栈字段只列实际技术、框架、工具名称，不写能力门槛句。不要使用任何现有模板示例内容，不要编造不存在的项目、公司、时间、量化结果。不要输出分析过程，只返回 JSON。",
+          `你是中文${config.label}简历写作助手。只能基于用户提供的目标岗位、HR岗位描述和经历素材生成${config.label}。写作必须像真实经历复盘，不能像为了迎合 JD 而堆关键词。不要复刻 JD 的招聘话术或门槛表达，例如“至少会”“优先”“加分项”“任职要求”“岗位职责”“需要具备”“熟练掌握者优先”。相关技能字段只列实际技术、框架、工具名称，不写能力门槛句。不要使用任何现有模板示例内容，不要编造不存在的项目、公司、时间、量化结果。为了适配一页简历，每条行动最多 2 条，每条行动一句话。不要输出分析过程，只返回 JSON。`,
       },
       {
         role: "user",
         content: JSON.stringify({
           task:
-            "生成 1 到 3 条项目经历。字段需适配中文简历模板：项目名称、角色、时间、项目背景、项目难点、行动列表、技术栈。参考 HR 岗位描述只用于选择突出哪些经历，不要把 JD 原句写进项目经历。项目背景写业务场景，项目难点写真实工程问题，行动列表写候选人实际做了什么。没有明确时间时使用“时间待补充”；没有明确技术栈时从素材可见技术中提炼，不能凭空添加。",
+            `${config.instruction}参考 HR 岗位描述只用于选择突出哪些素材，不要把 JD 原句写进经历。背景写业务或任务场景，重点写真实工程问题或职责重点，行动列表写候选人实际做了什么。没有明确时间时使用“时间待补充”；没有明确技术栈时从素材可见技术中提炼，不能凭空添加。`,
           outputSchema: {
-            projects: [
+            [config.outputKey]: [
               {
                 name: "string",
                 role: "string",
@@ -361,6 +397,34 @@ export const generateProjects = ({ settings, draft, materials }) =>
                 stack: "string",
               },
             ],
+          },
+          source: createSourcePayload({ draft, materials }),
+        }),
+      },
+    ],
+  });
+};
+
+export const generateProjects = ({ settings, draft, materials }) =>
+  generateExperienceSection({ settings, draft, materials, sectionKey: "projects" });
+
+export const generateAwards = ({ settings, draft, materials }) =>
+  requestJsonCompletion({
+    settings,
+    maxTokens: 1400,
+    messages: [
+      {
+        role: "system",
+        content:
+          "你是中文简历奖项证书整理助手。只能基于用户提供的目标岗位、HR岗位描述和经历素材提取奖项、证书、资格认证、英语等级、计算机等级等名称。不要生成描述，不要编造证书，不要输出分析过程，只返回 JSON。",
+      },
+      {
+        role: "user",
+        content: JSON.stringify({
+          task:
+            "提取 1 到 5 个奖项或证书名称。只写名称本身，例如“CET-4”“计算机二级”“蓝桥杯省赛二等奖”。不要写时间、颁发方、说明文字或换行内容。输出数组顺序按和目标岗位的相关性从高到低排列。",
+          outputSchema: {
+            awards: ["string"],
           },
           source: createSourcePayload({ draft, materials }),
         }),

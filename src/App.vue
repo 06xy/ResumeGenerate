@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, nextTick, onMounted, ref } from "vue";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 import AiConfigPanel from "./components/AiConfigPanel.vue";
@@ -9,7 +9,14 @@ import GeneratePanel from "./components/GeneratePanel.vue";
 import ResumePreview from "./components/ResumePreview.vue";
 import TemplatePanel from "./components/TemplatePanel.vue";
 import ToastNotice from "./components/ToastNotice.vue";
-import { extractJobFromScreenshot, generateCampus, generateProjects, generateSkills, planResumeSections } from "./services/aiResume";
+import {
+  extractJobFromScreenshot,
+  generateAwards,
+  generateCampus,
+  generateExperienceSection,
+  generateSkills,
+  planResumeSections,
+} from "./services/aiResume";
 import {
   defaultAiSettings,
   defaultBasicInfo,
@@ -37,7 +44,10 @@ const generationStepText = ref("");
 const loadingSections = ref({
   skills: false,
   campus: false,
+  work: false,
+  internships: false,
   projects: false,
+  awards: false,
 });
 
 const activeTemplateId = ref(resumeTemplates[0].id);
@@ -56,6 +66,17 @@ const toast = ref({
   type: "success",
   message: "",
 });
+
+const SECTION_KEYS = ["skills", "work", "internships", "projects", "campus", "awards"];
+const SECTION_LABELS = {
+  skills: "专业技能",
+  work: "工作经历",
+  internships: "实习经历",
+  projects: "项目经历",
+  campus: "校园经历",
+  awards: "奖项证书",
+};
+const EXPERIENCE_SECTION_KEYS = ["work", "internships", "projects"];
 
 let toastTimer = null;
 
@@ -94,12 +115,22 @@ const updateResumeCampus = (key, value) => {
   resume.value.campus[key] = value;
 };
 
-const updateResumeProject = ({ index, key, value }) => {
-  resume.value.projects[index][key] = value;
+const updateResumeExperience = ({ sectionKey, index, key, value }) => {
+  if (!Array.isArray(resume.value[sectionKey]) || !resume.value[sectionKey][index]) return;
+  resume.value[sectionKey][index][key] = value;
 };
 
-const updateResumeProjectAction = ({ projectIndex, actionIndex, value }) => {
-  resume.value.projects[projectIndex].actions[actionIndex] = value;
+const updateResumeExperienceAction = ({ sectionKey, itemIndex, actionIndex, value }) => {
+  const item = resume.value[sectionKey]?.[itemIndex];
+  if (!item?.actions || actionIndex < 0 || actionIndex >= item.actions.length) return;
+  item.actions[actionIndex] = value;
+};
+
+const updateResumeAwards = (value) => {
+  resume.value.awards = String(value || "")
+    .split(/[、,，\n]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
 };
 
 const updateResumeSectionTitle = (key, value) => {
@@ -198,7 +229,10 @@ const resetLoadingSections = () => {
   loadingSections.value = {
     skills: false,
     campus: false,
+    work: false,
+    internships: false,
     projects: false,
+    awards: false,
   };
 };
 
@@ -209,16 +243,31 @@ const setGenerationStep = (progress, text) => {
 
 const normalizeSectionPlan = (plan) => {
   const sections = plan?.sections || plan || {};
+  const enabledKeys = SECTION_KEYS.filter((key) => Boolean(sections[key]));
+  const priority = Array.isArray(sections.priority)
+    ? sections.priority.filter((key) => SECTION_KEYS.includes(key))
+    : [];
+
   return {
     skills: Boolean(sections.skills),
-    campus: Boolean(sections.campus),
+    work: Boolean(sections.work),
+    internships: Boolean(sections.internships),
     projects: Boolean(sections.projects),
+    campus: Boolean(sections.campus),
+    awards: Boolean(sections.awards),
+    priority: [...new Set([...priority, ...enabledKeys])],
   };
 };
 
 const applySkippedSections = (plan) => {
   if (!plan.skills) {
     resume.value.skills = [];
+  }
+
+  for (const sectionKey of EXPERIENCE_SECTION_KEYS) {
+    if (!plan[sectionKey]) {
+      resume.value[sectionKey] = [];
+    }
   }
 
   if (!plan.campus) {
@@ -228,8 +277,8 @@ const applySkippedSections = (plan) => {
     };
   }
 
-  if (!plan.projects) {
-    resume.value.projects = [];
+  if (!plan.awards) {
+    resume.value.awards = [];
   }
 };
 
@@ -251,21 +300,181 @@ const normalizeCampus = (payload) => {
   };
 };
 
-const normalizeProjects = (payload) => {
-  const projects = Array.isArray(payload?.projects) ? payload.projects : [];
-  return projects
-    .map((project) => ({
-      name: String(project?.name || "").trim(),
-      role: String(project?.role || "").trim(),
-      time: String(project?.time || "时间待补充").trim(),
-      background: String(project?.background || "").trim(),
-      challenge: String(project?.challenge || "").trim(),
-      actions: Array.isArray(project?.actions)
-        ? project.actions.map((action) => String(action || "").trim()).filter(Boolean)
+const normalizeExperienceItems = (payload, sectionKey) => {
+  const items = Array.isArray(payload?.[sectionKey]) ? payload[sectionKey] : [];
+  return items
+    .map((item) => ({
+      name: String(item?.name || "").trim(),
+      role: String(item?.role || "").trim(),
+      time: String(item?.time || "时间待补充").trim(),
+      background: String(item?.background || "").trim(),
+      challenge: String(item?.challenge || "").trim(),
+      actions: Array.isArray(item?.actions)
+        ? item.actions
+            .map((action) => String(action || "").trim())
+            .filter(Boolean)
+            .slice(0, 2)
         : [],
-      stack: String(project?.stack || "").trim(),
+      stack: String(item?.stack || "").trim(),
     }))
-    .filter((project) => project.name || project.background || project.actions.length);
+    .filter((item) => item.name || item.background || item.actions.length)
+    .slice(0, 2);
+};
+
+const normalizeAwards = (payload) => {
+  const awards = Array.isArray(payload?.awards) ? payload.awards : [];
+  return awards
+    .map((item) => String(item || "").trim().replace(/[。.!！；;，,\s]+$/g, ""))
+    .filter(Boolean)
+    .slice(0, 5);
+};
+
+const getPriorityRank = (priority = []) => {
+  const ordered = priority.length ? priority : SECTION_KEYS;
+  return SECTION_KEYS.reduce((ranks, key) => {
+    const index = ordered.indexOf(key);
+    ranks[key] = index >= 0 ? index : SECTION_KEYS.length;
+    return ranks;
+  }, {});
+};
+
+const getLowPriorityKeys = (priority = []) => {
+  const ranks = getPriorityRank(priority);
+  return [...SECTION_KEYS].sort((a, b) => ranks[b] - ranks[a]);
+};
+
+const isResumeOverflowing = () => {
+  const page = resumePreviewRef.value?.getPageElement?.();
+  if (!page) return false;
+
+  const minHeight = Number.parseFloat(window.getComputedStyle(page).minHeight);
+  const maxHeight = Number.isFinite(minHeight) && minHeight > 0 ? minHeight : 1123;
+  return page.scrollHeight > maxHeight + 6;
+};
+
+const trimExperienceActions = (sectionKey) => {
+  const item = resume.value[sectionKey]?.find((entry) => entry.actions?.length > 1);
+  if (!item) return false;
+
+  item.actions.pop();
+  return true;
+};
+
+const trimExperienceItem = (sectionKey) => {
+  if ((resume.value[sectionKey] || []).length <= 1) return false;
+
+  resume.value[sectionKey].pop();
+  return true;
+};
+
+const trimTextField = (sectionKey, key, maxLength) => {
+  const item = resume.value[sectionKey]?.find((entry) => String(entry[key] || "").length > maxLength);
+  if (!item) return false;
+
+  item[key] = `${String(item[key]).slice(0, maxLength).replace(/[，,、；;\s]+$/g, "")}`;
+  return true;
+};
+
+const trimCampus = () => {
+  if (!resume.value.campus?.body) return false;
+
+  if (resume.value.campus.body.length > 90) {
+    resume.value.campus.body = resume.value.campus.body.slice(0, 90).replace(/[，,、；;\s]+$/g, "");
+    return true;
+  }
+
+  resume.value.campus = { title: "", body: "" };
+  return true;
+};
+
+const removeSectionContent = (sectionKey) => {
+  if (sectionKey === "skills" && resume.value.skills.length) {
+    resume.value.skills = [];
+    return true;
+  }
+
+  if (EXPERIENCE_SECTION_KEYS.includes(sectionKey) && resume.value[sectionKey]?.length) {
+    resume.value[sectionKey] = [];
+    return true;
+  }
+
+  if (sectionKey === "campus" && (resume.value.campus.title || resume.value.campus.body)) {
+    resume.value.campus = { title: "", body: "" };
+    return true;
+  }
+
+  if (sectionKey === "awards" && resume.value.awards.length) {
+    resume.value.awards = [];
+    return true;
+  }
+
+  return false;
+};
+
+const runOnePageTrimStep = (priority = []) => {
+  const lowPriorityKeys = getLowPriorityKeys(priority);
+
+  for (const sectionKey of lowPriorityKeys.filter((key) => EXPERIENCE_SECTION_KEYS.includes(key))) {
+    if (trimExperienceActions(sectionKey)) return true;
+  }
+
+  if (resume.value.skills.length > 5) {
+    resume.value.skills.pop();
+    return true;
+  }
+
+  if (resume.value.awards.length > 3) {
+    resume.value.awards.pop();
+    return true;
+  }
+
+  for (const sectionKey of lowPriorityKeys.filter((key) => EXPERIENCE_SECTION_KEYS.includes(key))) {
+    if (trimTextField(sectionKey, "challenge", 70)) return true;
+    if (trimTextField(sectionKey, "background", 78)) return true;
+    if (trimTextField(sectionKey, "stack", 48)) return true;
+  }
+
+  if (resume.value.skills.length > 4) {
+    resume.value.skills.pop();
+    return true;
+  }
+
+  if (resume.value.awards.length > 2) {
+    resume.value.awards.pop();
+    return true;
+  }
+
+  for (const sectionKey of lowPriorityKeys.filter((key) => EXPERIENCE_SECTION_KEYS.includes(key))) {
+    if (trimExperienceItem(sectionKey)) return true;
+  }
+
+  if (trimCampus()) return true;
+
+  if (resume.value.awards.length > 1) {
+    resume.value.awards.pop();
+    return true;
+  }
+
+  for (const sectionKey of lowPriorityKeys) {
+    if (sectionKey !== "skills" && removeSectionContent(sectionKey)) return true;
+  }
+
+  return false;
+};
+
+const fitResumeToOnePage = async (priority = []) => {
+  await nextTick();
+
+  let changed = false;
+  for (let count = 0; count < 24 && isResumeOverflowing(); count += 1) {
+    if (!runOnePageTrimStep(priority)) break;
+    changed = true;
+    await nextTick();
+  }
+
+  if (changed) {
+    setGenerationStep(96, "已按一页简历压缩低优先级内容");
+  }
 };
 
 const generateResume = async () => {
@@ -301,18 +510,18 @@ const generateResume = async () => {
       }),
     );
 
-    if (!sectionPlan.skills && !sectionPlan.campus && !sectionPlan.projects) {
+    if (!SECTION_KEYS.some((key) => sectionPlan[key])) {
       sectionPlan.skills = true;
+      sectionPlan.priority = ["skills"];
     }
 
     applySkippedSections(sectionPlan);
     setGenerationStep(24, "已确定需要生成的简历板块");
 
-    const selectedSections = [
-      sectionPlan.skills && { key: "skills", label: "专业技能" },
-      sectionPlan.campus && { key: "campus", label: "校园经历" },
-      sectionPlan.projects && { key: "projects", label: "项目经历" },
-    ].filter(Boolean);
+    const planOrder = sectionPlan.priority.length ? sectionPlan.priority : SECTION_KEYS;
+    const selectedSections = planOrder
+      .filter((key) => sectionPlan[key])
+      .map((key) => ({ key, label: SECTION_LABELS[key] }));
 
     for (const [index, section] of selectedSections.entries()) {
       const startProgress = 24 + Math.round((index / selectedSections.length) * 66);
@@ -342,14 +551,23 @@ const generateResume = async () => {
         resume.value.campus = normalizeCampus(payload);
       }
 
-      if (section.key === "projects") {
-        const payload = await generateProjects({
+      if (EXPERIENCE_SECTION_KEYS.includes(section.key)) {
+        const payload = await generateExperienceSection({
+          settings: aiSettings.value,
+          draft: generationDraft.value,
+          materials,
+          sectionKey: section.key,
+        });
+        resume.value[section.key] = normalizeExperienceItems(payload, section.key);
+      }
+
+      if (section.key === "awards") {
+        const payload = await generateAwards({
           settings: aiSettings.value,
           draft: generationDraft.value,
           materials,
         });
-        const projects = normalizeProjects(payload);
-        resume.value.projects = projects.length ? projects : [];
+        resume.value.awards = normalizeAwards(payload);
       }
 
       loadingSections.value = {
@@ -359,6 +577,7 @@ const generateResume = async () => {
       setGenerationStep(endProgress, `${section.label}已生成`);
     }
 
+    await fitResumeToOnePage(sectionPlan.priority);
     setGenerationStep(100, "简历生成完成");
     showToast("简历已生成");
   } catch (error) {
@@ -601,8 +820,9 @@ onMounted(() => {
       @update-info-line="updateResumeInfoLine"
       @update-skill="updateResumeSkill"
       @update-campus="updateResumeCampus"
-      @update-project="updateResumeProject"
-      @update-project-action="updateResumeProjectAction"
+      @update-experience="updateResumeExperience"
+      @update-experience-action="updateResumeExperienceAction"
+      @update-awards="updateResumeAwards"
       @update-section-title="updateResumeSectionTitle"
       @update-project-label="updateResumeProjectLabel"
     />

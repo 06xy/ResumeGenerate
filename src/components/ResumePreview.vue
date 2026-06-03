@@ -1,8 +1,8 @@
 <script setup>
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import EditableText from "./EditableText.vue";
 
-defineProps({
+const props = defineProps({
   resume: {
     type: Object,
     required: true,
@@ -25,6 +25,9 @@ defineProps({
       skills: false,
       campus: false,
       projects: false,
+      work: false,
+      internships: false,
+      awards: false,
     }),
   },
   photoSrc: {
@@ -34,17 +37,25 @@ defineProps({
 });
 
 const emit = defineEmits([
+  "update-awards",
   "update-basic-info",
   "update-campus",
+  "update-experience",
+  "update-experience-action",
   "update-info-line",
-  "update-project",
-  "update-project-action",
   "update-project-label",
   "update-section-title",
   "update-skill",
 ]);
 
 const pageRef = ref(null);
+const experienceSections = computed(() =>
+  [
+    { key: "work", items: props.resume.work || [] },
+    { key: "internships", items: props.resume.internships || [] },
+    { key: "projects", items: props.resume.projects || [] },
+  ].filter((section) => props.loadingSections[section.key] || section.items.length),
+);
 
 defineExpose({
   getPageElement: () => pageRef.value,
@@ -204,14 +215,14 @@ defineExpose({
             </div>
           </section>
 
-          <section v-if="loadingSections.projects || resume.projects.length" class="paper-section">
+          <section v-for="section in experienceSections" :key="section.key" class="paper-section">
             <EditableText
               tag="h3"
               class="paper-title"
-              :model-value="resume.sectionTitles.projects"
-              @update:model-value="emit('update-section-title', 'projects', $event)"
+              :model-value="resume.sectionTitles[section.key]"
+              @update:model-value="emit('update-section-title', section.key, $event)"
             />
-            <div v-if="loadingSections.projects" class="section-skeleton project-skeleton">
+            <div v-if="loadingSections[section.key]" class="section-skeleton project-skeleton">
               <span class="skeleton-line medium"></span>
               <span class="skeleton-line long"></span>
               <span class="skeleton-line"></span>
@@ -219,31 +230,31 @@ defineExpose({
               <span class="skeleton-line short"></span>
             </div>
             <template v-else>
-              <article v-for="(project, index) in resume.projects" :key="index" class="project">
+              <article v-for="(item, index) in section.items" :key="index" class="project">
                 <div class="project-head">
                   <div>
                     <EditableText
                       tag="strong"
                       class="project-name"
-                      :model-value="project.name"
-                      @update:model-value="emit('update-project', { index, key: 'name', value: $event })"
+                      :model-value="item.name"
+                      @update:model-value="emit('update-experience', { sectionKey: section.key, index, key: 'name', value: $event })"
                     />
                     <EditableText
                       tag="span"
                       class="project-role"
-                      :model-value="project.role"
-                      @update:model-value="emit('update-project', { index, key: 'role', value: $event })"
+                      :model-value="item.role"
+                      @update:model-value="emit('update-experience', { sectionKey: section.key, index, key: 'role', value: $event })"
                     />
                   </div>
                   <EditableText
                     tag="span"
                     class="project-time"
-                    :model-value="project.time"
-                    @update:model-value="emit('update-project', { index, key: 'time', value: $event })"
+                    :model-value="item.time"
+                    @update:model-value="emit('update-experience', { sectionKey: section.key, index, key: 'time', value: $event })"
                   />
                 </div>
 
-                <p class="project-block">
+                <p v-if="item.background" class="project-block">
                   <EditableText
                     tag="strong"
                     :model-value="resume.projectLabels.background"
@@ -251,11 +262,11 @@ defineExpose({
                   />
                   <EditableText
                     tag="span"
-                    :model-value="project.background"
-                    @update:model-value="emit('update-project', { index, key: 'background', value: $event })"
+                    :model-value="item.background"
+                    @update:model-value="emit('update-experience', { sectionKey: section.key, index, key: 'background', value: $event })"
                   />
                 </p>
-                <p class="project-block">
+                <p v-if="item.challenge" class="project-block">
                   <EditableText
                     tag="strong"
                     :model-value="resume.projectLabels.challenge"
@@ -263,27 +274,34 @@ defineExpose({
                   />
                   <EditableText
                     tag="span"
-                    :model-value="project.challenge"
-                    @update:model-value="emit('update-project', { index, key: 'challenge', value: $event })"
+                    :model-value="item.challenge"
+                    @update:model-value="emit('update-experience', { sectionKey: section.key, index, key: 'challenge', value: $event })"
                   />
                 </p>
-                <div class="project-block">
+                <div v-if="item.actions?.length" class="project-block">
                   <EditableText
                     tag="strong"
                     :model-value="resume.projectLabels.actions"
                     @update:model-value="emit('update-project-label', 'actions', $event)"
                   />
                   <ul>
-                    <li v-for="(action, actionIndex) in project.actions" :key="actionIndex">
+                    <li v-for="(action, actionIndex) in item.actions" :key="actionIndex">
                       <EditableText
                         tag="span"
                         :model-value="action"
-                        @update:model-value="emit('update-project-action', { projectIndex: index, actionIndex, value: $event })"
+                        @update:model-value="
+                          emit('update-experience-action', {
+                            sectionKey: section.key,
+                            itemIndex: index,
+                            actionIndex,
+                            value: $event,
+                          })
+                        "
                       />
                     </li>
                   </ul>
                 </div>
-                <p class="project-block">
+                <p v-if="item.stack" class="project-block">
                   <EditableText
                     tag="strong"
                     :model-value="resume.projectLabels.stack"
@@ -292,12 +310,32 @@ defineExpose({
                   <EditableText
                     tag="span"
                     class="keywords"
-                    :model-value="project.stack"
-                    @update:model-value="emit('update-project', { index, key: 'stack', value: $event })"
+                    :model-value="item.stack"
+                    @update:model-value="emit('update-experience', { sectionKey: section.key, index, key: 'stack', value: $event })"
                   />
                 </p>
               </article>
             </template>
+          </section>
+
+          <section v-if="loadingSections.awards || resume.awards.length" class="paper-section">
+            <EditableText
+              tag="h3"
+              class="paper-title"
+              :model-value="resume.sectionTitles.awards"
+              @update:model-value="emit('update-section-title', 'awards', $event)"
+            />
+            <div v-if="loadingSections.awards" class="section-skeleton compact">
+              <span class="skeleton-line medium"></span>
+              <span class="skeleton-line long"></span>
+            </div>
+            <EditableText
+              v-else
+              tag="p"
+              class="award-line"
+              :model-value="resume.awards.join('、')"
+              @update:model-value="emit('update-awards', $event)"
+            />
           </section>
         </div>
       </article>

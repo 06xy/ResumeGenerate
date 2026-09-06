@@ -18,6 +18,7 @@ import {
   generateSkills,
   planResumeSections,
 } from "./services/aiResume";
+import { resolveChatCompletionsEndpoint } from "./services/aiEndpoint";
 import {
   defaultAiSettings,
   defaultBasicInfo,
@@ -694,7 +695,7 @@ const testAiConnection = async () => {
   const timeout = window.setTimeout(() => controller.abort(), 15000);
 
   try {
-    const response = await fetch(aiSettings.value.endpoint.trim(), {
+    const response = await fetch(resolveChatCompletionsEndpoint(aiSettings.value.endpoint), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

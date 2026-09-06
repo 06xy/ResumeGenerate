@@ -57,7 +57,7 @@ npm run preview
 
 在应用右侧进入 `AI配置`，填写：
 
-- `接口请求地址`：OpenAI 兼容的 Chat Completions 地址，例如 `https://api.openai.com/v1/chat/completions`
+- `接口请求地址`：OpenAI 兼容的 Base URL 或完整 Chat Completions 地址，例如 DeepSeek 官方 Base URL `https://api.deepseek.com`。填写以 `/v1` 结尾的 Base URL 时也会自动补全 `/chat/completions`
 - `API Key`：接口密钥
 - `模型 ID`：例如 `gpt-4o-mini`
 - `思考模型`：如果模型会输出 reasoning / thinking 内容，可开启该开关

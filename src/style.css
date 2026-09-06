@@ -141,6 +141,7 @@ button {
   outline: none;
   border-radius: 2px;
   cursor: text;
+  white-space: pre-wrap;
 }
 
 .editable-text:hover {

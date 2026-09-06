@@ -141,6 +141,7 @@ button {
   outline: none;
   border-radius: 2px;
   cursor: text;
+  white-space: pre-wrap;
 }
 
 .editable-text:hover {
@@ -1456,6 +1457,12 @@ button {
 .field span {
   color: var(--muted);
   font-size: 14px;
+}
+
+.field small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .field input {

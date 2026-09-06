@@ -1,3 +1,5 @@
+import { resolveChatCompletionsEndpoint } from "./aiEndpoint";
+
 const JSON_FENCE_RE = /^```(?:json)?\s*|\s*```$/g;
 
 const getContentText = (content) => {
@@ -170,7 +172,7 @@ const isResponseFormatParameterError = (error) => /response_format|json_object/i
 const isJsonSchemaParameterError = (error) => /json_schema|schema|strict/i.test(error?.message || "");
 
 const requestCompletionPayload = async ({ settings, body }) => {
-  const response = await fetch(settings.endpoint.trim(), {
+  const response = await fetch(resolveChatCompletionsEndpoint(settings.endpoint), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

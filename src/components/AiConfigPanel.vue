@@ -20,9 +20,10 @@ defineEmits(["save", "test", "update-setting"]);
       <input
         :value="settings.endpoint"
         type="url"
-        placeholder="https://api.openai.com/v1/chat/completions"
+        placeholder="https://api.deepseek.com 或完整接口地址"
         @input="$emit('update-setting', 'endpoint', $event.target.value)"
       />
+      <small>支持填写 Base URL；系统会自动补全标准的 Chat Completions 路径。</small>
     </label>
 
     <label class="field">
